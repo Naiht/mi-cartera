@@ -30,19 +30,31 @@ El proyecto está pensado como una base libre para que cualquier persona pueda *
 ### 🏠 Inicio
 Visualización del resumen mensual y gastos registrados.
 
-![Home](./screenshots/home.png)
+![Home](./screenshots/home.jpeg)
+![Home](./screenshots/light-home.jpeg)
 
 ### ➕ Nuevo gasto
 Formulario para registrar un gasto con descripción, monto, fecha y categoría.
+![Nuevo gasto](./screenshots/new-expense.jpeg)
 
-![Nuevo gasto](./screenshots/new-expense.png)
+
+
+![Nuevo gasto lista](./screenshots/list-expense.jpeg)
+
+Cargar listas predefinidas por el usuario
+![Nuevo gasto lista carga](./screenshots/load-list.jpeg)
+
+### 🪙 Divisas
+Selector de divisa a mostrar.
+
+![Divisas](./screenshots/currency.jpeg)
 
 ### 🏷️ Categorías
 Gestión de categorías personalizadas.
 
-![Categorías](./screenshots/categories.png)
+![Categorías](./screenshots/category.jpeg)
+![Categorías](./screenshots/category-edit.jpeg)
 
-> 📌 Las imágenes se encuentran en la carpeta `/screenshots`.
 
 ---
 
