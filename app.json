@@ -1,39 +1,67 @@
 {
   "expo": {
-    "name": "mi-cartera",
+    "name": "Mi Cartera",
     "slug": "mi-cartera",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/iconapp/icon.png",
     "scheme": "micartera",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/iconapp/splash-icon-light.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "splash": {
+        "image": "./assets/images/iconapp/splash-icon-light.png",
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/images/iconapp/splash-icon-dark.png",
+          "backgroundColor": "#0F172A"
+        }
+      },
+      "bundleIdentifier": "com.anonymous.micartera"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/iconapp/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "splash": {
+        "image": "./assets/images/iconapp/splash-icon-light.png",
+        "backgroundColor": "#ffffff",
+        "resizeMode": "contain",
+        "dark": {
+          "image": "./assets/images/iconapp/splash-icon-dark.png",
+          "backgroundColor": "#0F172A"
+        }
+      },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.micartera"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/iconapp/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@react-native-community/datetimepicker",
+      "expo-sqlite",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "52fff450-8de7-457b-b8d8-9eb65c9b2fdd"
+      }
     }
   }
 }
