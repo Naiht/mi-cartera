@@ -4,8 +4,9 @@
 
 # Mi Cartera 💳
 
-![Logo](./assets/images/iconapp/splash-icon.png)
-
+<p align="center">
+  <img src="./assets/images/iconapp/splash-icon.png" width="100" />
+</p>
 
 **Mi Cartera** es una aplicación móvil *open source* para el control personal de gastos, enfocada en simplicidad, rapidez y una experiencia visual limpia.
 
@@ -18,6 +19,7 @@ El proyecto está pensado como una base libre para que cualquier persona pueda *
 - 🏷️ Categorías personalizadas
 - 📅 Control por fechas
 - 📊 Resumen mensual de gastos
+- 🪙 Soporte para divisas
 - 🎨 Diseño limpio y moderno
 - 💾 Almacenamiento local con SQLite
 
@@ -27,42 +29,56 @@ El proyecto está pensado como una base libre para que cualquier persona pueda *
 
 > Las siguientes imágenes muestran el flujo principal de la app y sus funcionalidades.
 
-### 🏠 Inicio
+### 🏠 Inicio  
 Visualización del resumen mensual y gastos registrados.
 
-![Home](./screenshots/home.jpeg)
-![Home](./screenshots/light-home.jpeg)
+<p align="center">
+  <img src="./screenshots/home.jpeg" width="220" />
+  <img src="./screenshots/light-home.jpeg" width="220" />
+</p>
 
-### ➕ Nuevo gasto
+---
+
+### ➕ Nuevo gasto  
 Formulario para registrar un gasto con descripción, monto, fecha y categoría.
-![Nuevo gasto](./screenshots/new-expense.jpeg)
 
+<p align="center">
+  <img src="./screenshots/new-expense.jpeg" width="220" />
+  <img src="./screenshots/list-expense.jpeg" width="220" />
+</p>
 
+**Cargar listas predefinidas creadas por el usuario**
 
-![Nuevo gasto lista](./screenshots/list-expense.jpeg)
+<p align="center">
+  <img src="./screenshots/load-list.jpeg" width="220" />
+</p>
 
-Cargar listas predefinidas por el usuario
-![Nuevo gasto lista carga](./screenshots/load-list.jpeg)
+---
 
-### 🪙 Divisas
-Selector de divisa a mostrar.
+### 🪙 Divisas  
+Selector de divisa a mostrar en la aplicación.
 
-![Divisas](./screenshots/currency.jpeg)
+<p align="center">
+  <img src="./screenshots/currency.jpeg" width="220" />
+</p>
 
-### 🏷️ Categorías
+---
+
+### 🏷️ Categorías  
 Gestión de categorías personalizadas.
 
-![Categorías](./screenshots/category.jpeg)
-![Categorías](./screenshots/category-edit.jpeg)
-
+<p align="center">
+  <img src="./screenshots/category.jpeg" width="220" />
+  <img src="./screenshots/category-edit.jpeg" width="220" />
+</p>
 
 ---
 
 ## 📲 Descargar (Android)
 👉 El archivo **APK** está disponible en la sección **Releases** del repositorio.
 
-> ⚠️ Android puede mostrar una advertencia al instalar apps fuera de Google Play.  
-> Es normal y seguro para este proyecto.
+> ⚠️ Android puede mostrar una advertencia al instalar aplicaciones fuera de Google Play.  
+> Es un comportamiento normal y seguro para este proyecto.
 
 ---
 
