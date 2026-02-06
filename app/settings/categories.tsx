@@ -1,5 +1,5 @@
 import { View, Pressable, ScrollView, Alert } from "react-native";
-import { Stack, router } from "expo-router";
+import { Stack } from "expo-router";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../../constants/Colors";
 import { Text } from "../../components/ui/Text";
@@ -15,24 +15,28 @@ import {
   updateCategorie,
   saveCategorie,
 } from "../../db/queries/categories";
-
 import Toast from "react-native-toast-message";
 
 export default function categoriesScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+
+  const isMountedRef = useRef(true);
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
-
   const [categories, setCategories] = useState<any[]>([]);
-
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
-
   const [name, setName] = useState("");
   const [color, setColor] = useState("#EF4444");
 
   useEffect(() => {
+    isMountedRef.current = true;
     loadCategories();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   function openCreateModal() {
@@ -55,8 +59,15 @@ export default function categoriesScreen() {
   }
 
   async function loadCategories() {
-    const cats = await getExpenseCategories();
-    setCategories(cats);
+    try {
+      const cats = await getExpenseCategories();
+
+      if (!isMountedRef.current) return;
+
+      setCategories(cats);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function handleSave() {
@@ -76,7 +87,6 @@ export default function categoriesScreen() {
 
       if (editingCategory) {
         await updateCategorie(Number(selectedId), payload);
-        //@ts-ignore
         Toast.show({
           type: "success",
           text1: "Categoria actualizada",
@@ -84,7 +94,6 @@ export default function categoriesScreen() {
         });
       } else {
         await saveCategorie(payload);
-        //@ts-ignore
         Toast.show({
           type: "success",
           text1: "Categoria guardada",
@@ -94,21 +103,30 @@ export default function categoriesScreen() {
 
       await loadCategories();
 
+      if (!isMountedRef.current) return;
+
       setModalVisible(false);
       setEditingCategory(null);
       setSelectedId(null);
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "No se pudo guardar el gasto. Intenta nuevamente.");
+      if (isMountedRef.current) {
+        Alert.alert(
+          "Error",
+          "No se pudo guardar la categoria. Intenta nuevamente.",
+        );
+      }
     }
   }
 
-  async function handleState(removing: boolean) {
+  async function handleState(removing: boolean, cate: any) {
     if (!selectedId) return;
 
     try {
       const categoryId = Number(selectedId);
       const inUse = await isCategoryInUse(categoryId);
+
+      if (!isMountedRef.current) return;
 
       if (inUse) {
         Toast.show({
@@ -119,9 +137,13 @@ export default function categoriesScreen() {
         return;
       }
 
-      const newState = removing ? -1 : 0;
+      let newState = 0;//removing ? -1 : 0;
+
+      removing ? newState = -1 : cate.estado == 0 ? newState = 1 : newState = 0;
 
       await stateCategorie(categoryId, newState);
+
+      if (!isMountedRef.current) return;
 
       Toast.show({
         type: "success",
@@ -130,17 +152,28 @@ export default function categoriesScreen() {
       });
 
       await loadCategories();
+
+      if (!isMountedRef.current) return;
+
       setSelectedId(null);
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "Ocurrió un error al actualizar la categoría");
+      if (isMountedRef.current) {
+        Alert.alert(
+          "Error",
+          "Ocurrió un error al actualizar la categoría",
+        );
+      }
     }
   }
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: Colors[theme].background }}
-      contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
+      contentContainerStyle={{
+        padding: 16,
+        paddingBottom: insets.bottom + 24,
+      }}
     >
       <Stack.Screen
         options={{
@@ -168,82 +201,69 @@ export default function categoriesScreen() {
         </Text>
       </Pressable>
 
-      {categories.map((c) => {
-        const selected = c.id === selectedId;
+      {categories.map((c) => (
+        <Pressable
+          key={c.id}
+          onPress={() => openEditModal(c)}
+          style={({ pressed }) => ({
+            padding: 16,
+            borderRadius: 12,
+            backgroundColor: Colors[theme].card,
+            marginBottom: 8,
+            flexDirection: "row",
+            alignItems: "center",
+            transform: [{ scale: pressed ? 0.97 : 1 }],
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              backgroundColor: c.color,
+              marginRight: 12,
+            }}
+          />
 
-        return (
-          <Pressable
-            key={c.id}
-            style={({ pressed }) => ({
-              padding: 16,
-              borderRadius: 12,
-              backgroundColor: Colors[theme].card,
-              marginBottom: 8,
-              flexDirection: "row",
-              alignItems: "center",
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <View
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                backgroundColor: c.color,
-                marginRight: 12,
-              }}
-            />
+          <Text style={{ flex: 1, fontWeight: "500" }}>{c.name}</Text>
 
-            <Text style={{ flex: 1, fontWeight: "500" }}>{c.name}</Text>
-            {/* EDITAR */}
-            <Pressable
-              onPress={() => openEditModal(c)}
-              style={({ pressed }) => ({
-                marginLeft: 8,
-                transform: [{ scale: pressed ? 0.50 : 1 }],
-                opacity: pressed ? 0.85 : 1,
-              })}
-            >
-              <MaterialIcons name="edit" size={20} color={Colors[theme].text} />
-            </Pressable>
-
-            {/* INACTIVAR */}
-            <Pressable
-              onPress={() => {
-                setSelectedId(c.id);
-                handleState(false);
-              }}
-              style={({pressed}) => ({ marginLeft: 8 , transform: [{ scale: pressed ? 0.50 : 1 }], })}
-            >
-              <MaterialIcons
-                name={c.estado == 0 ? "visibility-off" : "visibility"}
-                size={20}
-                color={Colors[theme].text}
-              />
-            </Pressable>
-
-            {/* ELIMINAR */}
-            <Pressable
-              onPress={() => {
-                setSelectedId(c.id);
-                handleState(true);
-              }}
-              style={({ pressed }) => ({marginLeft: 8, transform: [{ scale: pressed ? 0.50 : 1 }], })}
-            >
-              <MaterialIcons name="delete" size={20} color="#EF4444" />
-            </Pressable>
+          <Pressable onPress={() => openEditModal(c)} style={{ marginLeft: 8 }}>
+            <MaterialIcons name="edit" size={20} color={Colors[theme].text} />
           </Pressable>
-        );
-      })}
+
+          <Pressable
+            onPress={() => {
+              setSelectedId(c.id);
+              handleState(false,c);
+            }}
+            style={{ marginLeft: 8 }}
+          >
+            <MaterialIcons
+              name={c.estado == 0 ? "visibility-off" : "visibility"}
+              size={20}
+              color={Colors[theme].text}
+            />
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              setSelectedId(c.id);
+              handleState(true,c);
+            }}
+            style={{ marginLeft: 8 }}
+          >
+            <MaterialIcons name="delete" size={20} color="#EF4444" />
+          </Pressable>
+        </Pressable>
+      ))}
 
       <Modal
         visible={modalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setModalVisible(false)} // Android back button
+        onRequestClose={() => setModalVisible(false)}
       >
-        {/* Overlay que cierra al tocar fuera */}
         <Pressable
           style={{
             flex: 1,
@@ -253,7 +273,6 @@ export default function categoriesScreen() {
           }}
           onPress={() => setModalVisible(false)}
         >
-          {/* Contenedor del modal: evita cerrar al tocar dentro */}
           <Pressable
             onPress={() => {}}
             style={{
@@ -308,10 +327,10 @@ export default function categoriesScreen() {
             <View style={{ height: 220, marginBottom: 16 }}>
               <ColorPicker
                 color={color}
-                onColorChange={(c) => setColor(c)}
+                onColorChange={setColor}
                 thumbSize={24}
                 sliderSize={24}
-                noSnap={true}
+                noSnap
                 row={false}
               />
             </View>
@@ -338,7 +357,9 @@ export default function categoriesScreen() {
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>Guardar</Text>
+              <Text style={{ color: "#fff", fontWeight: "600" }}>
+                Guardar
+              </Text>
             </Pressable>
           </Pressable>
         </Pressable>

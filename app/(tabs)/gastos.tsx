@@ -1,7 +1,7 @@
 import { View, FlatList, Pressable } from "react-native";
 import { router } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { t } from "@/i18n";
 import { Colors } from "../../constants/Colors";
@@ -16,7 +16,6 @@ import { getDateRange } from "../../utils/getDateRange";
 import { getSettings } from "../../db/queries/settings";
 import { getCurrencyById } from "../../utils/currency";
 import { useFocusEffect } from "expo-router";
-import { useCallback } from "react";
 import { RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -32,47 +31,72 @@ type Gasto = {
 export default function GastosScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+
+  const isMountedRef = useRef(true);
+  const reqIdRef = useRef(0);
+
   const [period, setPeriod] = useState<"7" | "15" | "30" | "range">("30");
   const [showRange, setShowRange] = useState(false);
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
 
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [currency, setCurrency] = useState("C$");
-
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadExpenses();
-    setRefreshing(false);
-  };
+  const loadExpenses = useCallback(async () => {
+    const myReqId = ++reqIdRef.current;
 
-  async function loadExpenses() {
-    //cargar gastos
-    const settings = await getSettings();
-    if (settings) {
-      const c = getCurrencyById(settings.currency_id);
-      setCurrency(c.symbol);
+    try {
+      const settings = await getSettings();
+      if (!isMountedRef.current || myReqId !== reqIdRef.current) return;
+
+      if (settings) {
+        const c = getCurrencyById(settings.currency_id);
+        setCurrency(c.symbol);
+      }
+
+      // @ts-ignore
+      const { start, end } = getDateRange(period, range ?? undefined);
+
+      const rows = await getGastosByPeriod(start, end);
+      if (!isMountedRef.current || myReqId !== reqIdRef.current) return;
+
+      setGastos(
+        rows.map((r) => ({
+          id: r.id,
+          descripcion: r.description ?? t("expenses.noDescription"),
+          categoria: r.category_name,
+          monto: r.amount,
+          fecha: r.date,
+        })),
+      );
+    } catch (err) {
+      console.error(err);
     }
-    //@ts-ignore
-    const { start, end } = getDateRange(period, range ?? undefined);
-    const rows = await getGastosByPeriod(start, end);
+  }, [period, range]);
 
-    setGastos(
-      rows.map((r) => ({
-        id: r.id,
-        descripcion: r.description ?? t("expenses.noDescription"),
-        categoria: r.category_name,
-        monto: r.amount,
-        fecha: r.date,
-      })),
-    );
-  }
+  const onRefresh = useCallback(async () => {
+    if (!isMountedRef.current) return;
+
+    setRefreshing(true);
+    try {
+      await loadExpenses();
+    } finally {
+      if (isMountedRef.current) setRefreshing(false);
+    }
+  }, [loadExpenses]);
 
   useFocusEffect(
     useCallback(() => {
+      isMountedRef.current = true;
       loadExpenses();
-    }, [period, range]),
+
+      return () => {
+        // marca desmontado + invalida cualquier request en vuelo
+        isMountedRef.current = false;
+        reqIdRef.current++;
+      };
+    }, [loadExpenses]),
   );
 
   return (
@@ -217,16 +241,15 @@ export default function GastosScreen() {
               >
                 {/* Izquierda */}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "600", marginBottom: 2 }}
+                  <Text
+                    style={{ fontWeight: "600", marginBottom: 2 }}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
                     {item.descripcion}
                   </Text>
 
-                  <Text
-                    style={{ fontSize: 12, color: Colors[theme].textMuted }}
-                  >
+                  <Text style={{ fontSize: 12, color: Colors[theme].textMuted }}>
                     {item.categoria} · {formatDate(item.fecha)}
                   </Text>
                 </View>

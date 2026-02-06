@@ -1,6 +1,6 @@
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { Stack, useLocalSearchParams, router } from "expo-router";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useFocusEffect } from "expo-router";
 import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../../constants/Colors";
@@ -10,9 +10,6 @@ import { BaseSelect } from "../../components/ui/BaseSelect";
 import Toast from "react-native-toast-message";
 import { getExpenseCategories } from "../../db/queries/categories";
 import { KeyboardAvoidingView, ScrollView, Platform } from "react-native";
-
-//import { getCurrencyById } from "../../utils/currency";
-//import { getSettings } from "../../db/queries/settings";
 
 import {
   saveGasto,
@@ -27,13 +24,14 @@ export default function GastoForm() {
   const { id } = useLocalSearchParams();
   const isEdit = Boolean(id);
 
+  const isMountedRef = useRef(true);
+
   const [descripcion, setDescripcion] = useState("");
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState(new Date());
   const [categoria, setCategoria] = useState("");
 
   const [categories, setCategories] = useState<any[]>([]);
-  const [height, setHeight] = useState(100);
 
   function showConfirm({
     title,
@@ -49,10 +47,7 @@ export default function GastoForm() {
     destructive?: boolean;
   }) {
     Alert.alert(title, message, [
-      {
-        text: "Cancelar",
-        style: "cancel",
-      },
+      { text: "Cancelar", style: "cancel" },
       {
         text: confirmText,
         style: destructive ? "destructive" : "default",
@@ -64,35 +59,37 @@ export default function GastoForm() {
   }
 
   /* =========================
-     CARGAR DATA
+     CARGAR DATA (SEGURO)
   ========================= */
   useFocusEffect(
     useCallback(() => {
-      let isActive = true;
+      isMountedRef.current = true;
 
       (async () => {
-        const cats = await getExpenseCategories();
-        if (!isActive) return;
+        try {
+          const cats = await getExpenseCategories();
+          if (!isMountedRef.current) return;
 
-        setCategories(cats);
+          setCategories(cats);
 
-        if (id) {
-          const gasto = await getGastoById(Number(id));
-          if (gasto) {
+          if (id) {
+            const gasto = await getGastoById(Number(id));
+            if (!isMountedRef.current || !gasto) return;
+
             setDescripcion(gasto.description ?? "");
             setMonto(String(gasto.amount));
             setFecha(new Date(gasto.date));
             setCategoria(String(gasto.category_id));
-          }
-        } else {
-          if (cats.length > 0) {
+          } else if (cats.length > 0) {
             setCategoria(String(cats[0].id));
           }
+        } catch (err) {
+          console.error(err);
         }
       })();
 
       return () => {
-        isActive = false;
+        isMountedRef.current = false;
       };
     }, [id]),
   );
@@ -103,7 +100,7 @@ export default function GastoForm() {
   }));
 
   /* =========================
-     GUARDAR
+     GUARDAR (SEGURO)
   ========================= */
   async function handleSave() {
     if (!monto || !categoria) {
@@ -124,29 +121,35 @@ export default function GastoForm() {
 
       if (isEdit && id) {
         await updateGasto(Number(id), payload);
-        //@ts-ignore
         Toast.show({
           type: "success",
           text1: "Gasto actualizado",
-          text2: "Los cambios se guardaron correctamente",
         });
       } else {
         await saveGasto(payload);
-        //@ts-ignore
         Toast.show({
           type: "success",
           text1: "Gasto guardado",
-          text2: "El gasto se registró correctamente",
         });
       }
+
+      if (!isMountedRef.current) return;
 
       router.back();
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "No se pudo guardar el gasto. Intenta nuevamente.");
+      if (isMountedRef.current) {
+        Alert.alert(
+          "Error",
+          "No se pudo guardar el gasto. Intenta nuevamente.",
+        );
+      }
     }
   }
 
+  /* =========================
+     ELIMINAR (SEGURO)
+  ========================= */
   function handleDelete() {
     if (!isEdit || !id) return;
 
@@ -156,15 +159,20 @@ export default function GastoForm() {
       confirmText: "Eliminar",
       destructive: true,
       onConfirm: async () => {
-        await deleteGasto(Number(id));
+        try {
+          await deleteGasto(Number(id));
 
-        Toast.show({
-          type: "success",
-          text1: "Gasto eliminado",
-          text2: "El gasto se eliminó correctamente",
-        });
+          if (!isMountedRef.current) return;
 
-        router.back();
+          Toast.show({
+            type: "success",
+            text1: "Gasto eliminado",
+          });
+
+          router.back();
+        } catch (err) {
+          console.error(err);
+        }
       },
     });
   }
@@ -174,9 +182,7 @@ export default function GastoForm() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView keyboardShouldPersistTaps="handled">
         <View
           style={{
             flex: 1,
@@ -188,7 +194,6 @@ export default function GastoForm() {
             options={{
               title: isEdit ? "Editar gasto" : "Nuevo gasto",
               gestureEnabled: false,
-
               headerTitleStyle: {
                 color: Colors[theme].textHeader,
                 fontWeight: "600",
@@ -245,7 +250,11 @@ export default function GastoForm() {
             value={fecha}
             onChange={(date) => {
               setFecha(
-                new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+                new Date(
+                  date.getFullYear(),
+                  date.getMonth(),
+                  date.getDate(),
+                ),
               );
             }}
           />
